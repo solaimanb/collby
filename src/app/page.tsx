@@ -5,22 +5,21 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Mic, MicOff, PhoneOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 import Peer from "simple-peer";
 
 // Use environment variable for Socket.IO server URL
 const SOCKET_SERVER = process.env.NEXT_PUBLIC_SOCKET_SERVER || "http://localhost:5000";
 
 export default function VoiceCall() {
-  const [roomId, setRoomId] = useState("");
-  const [isInCall, setIsInCall] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [peerId, setPeerId] = useState("");
-  const [error, setError] = useState("");
+  const [roomId, setRoomId] = useState<string>("");
+  const [isInCall, setIsInCall] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
 
-  const socketRef = useRef<any>(null); // Provide a default value
-  const peerRef = useRef<any>(null); // Provide a default value
-  const streamRef = useRef<MediaStream>(null); // Provide a default value
+  const socketRef = useRef<Socket | null>(null);
+  const peerRef = useRef<Peer.Instance | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     socketRef.current = io(SOCKET_SERVER);
@@ -29,29 +28,35 @@ export default function VoiceCall() {
       setError("Room is full. Maximum 2 participants allowed.");
     });
 
-    socketRef.current.on("user-joined", ({ signal }) => {
-      const peer = new Peer({
-        initiator: false,
-        trickle: false,
-        stream: streamRef.current,
-      });
+    socketRef.current.on("user-joined", ({ signal }: { signal: Peer.SignalData }) => {
+      if (streamRef.current) {
+        const peer = new Peer({
+          initiator: false,
+          trickle: false,
+          stream: streamRef.current,
+        });
 
-      peer.on("signal", (data) => {
-        socketRef.current.emit("returning-signal", { signal: data, roomId });
-      });
+        peer.on("signal", (data: Peer.SignalData) => {
+          socketRef.current?.emit("returning-signal", { signal: data, roomId });
+        });
 
-      peer.on("stream", (stream) => {
-        const audio = new Audio();
-        audio.srcObject = stream;
-        audio.play();
-      });
+        peer.on("stream", (stream: MediaStream) => {
+          const audio = new Audio();
+          audio.srcObject = stream;
+          audio.play();
+        });
 
-      peer.signal(signal);
-      peerRef.current = peer;
+        peer.signal(signal);
+        peerRef.current = peer;
+      } else {
+        setError("Local stream is not available.");
+      }
     });
 
-    socketRef.current.on("receiving-returned-signal", ({ signal }) => {
-      peerRef.current.signal(signal);
+    socketRef.current.on("receiving-returned-signal", ({ signal }: { signal: Peer.SignalData }) => {
+      if (peerRef.current) {
+        peerRef.current.signal(signal);
+      }
     });
 
     return () => {
@@ -78,11 +83,11 @@ export default function VoiceCall() {
         stream,
       });
 
-      peer.on("signal", (data) => {
-        socketRef.current.emit("join-room", { roomId, signal: data });
+      peer.on("signal", (data: Peer.SignalData) => {
+        socketRef.current?.emit("join-room", { roomId, signal: data });
       });
 
-      peer.on("stream", (stream) => {
+      peer.on("stream", (stream: MediaStream) => {
         const audio = new Audio();
         audio.srcObject = stream;
         audio.play();
@@ -90,7 +95,6 @@ export default function VoiceCall() {
 
       peerRef.current = peer;
       setIsInCall(true);
-      setPeerId(socketRef.current.id);
     } catch (err) {
       console.error("Error accessing microphone:", err);
       setError("Could not access microphone. Please check permissions.");
@@ -105,7 +109,6 @@ export default function VoiceCall() {
       streamRef.current.getTracks().forEach((track) => track.stop());
     }
     setIsInCall(false);
-    setPeerId("");
     setError("");
   };
 
