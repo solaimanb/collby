@@ -28,36 +28,48 @@ export default function VoiceCall() {
       setError("Room is full. Maximum 2 participants allowed.");
     });
 
-    socketRef.current.on("user-joined", ({ signal }: { signal: Peer.SignalData }) => {
-      if (streamRef.current) {
-        const peer = new Peer({
-          initiator: false,
-          trickle: false,
-          stream: streamRef.current,
-        });
+    socketRef.current.on(
+      "user-joined",
+      ({ signal }: { signal: Peer.SignalData }) => {
+        if (streamRef.current) {
+          const peer = new Peer({
+            initiator: false,
+            trickle: false,
+            stream: streamRef.current,
+            config: {
+              iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+            },
+          });
 
-        peer.on("signal", (data: Peer.SignalData) => {
-          socketRef.current?.emit("returning-signal", { signal: data, roomId });
-        });
+          peer.on("signal", (data: Peer.SignalData) => {
+            socketRef.current?.emit("returning-signal", {
+              signal: data,
+              roomId,
+            });
+          });
 
-        peer.on("stream", (stream: MediaStream) => {
-          const audio = new Audio();
-          audio.srcObject = stream;
-          audio.play();
-        });
+          peer.on("stream", (stream: MediaStream) => {
+            const audio = new Audio();
+            audio.srcObject = stream;
+            audio.play();
+          });
 
-        peer.signal(signal);
-        peerRef.current = peer;
-      } else {
-        setError("Local stream is not available.");
+          peer.signal(signal);
+          peerRef.current = peer;
+        } else {
+          setError("Local stream is not available.");
+        }
       }
-    });
+    );
 
-    socketRef.current.on("receiving-returned-signal", ({ signal }: { signal: Peer.SignalData }) => {
-      if (peerRef.current) {
-        peerRef.current.signal(signal);
+    socketRef.current.on(
+      "receiving-returned-signal",
+      ({ signal }: { signal: Peer.SignalData }) => {
+        if (peerRef.current) {
+          peerRef.current.signal(signal);
+        }
       }
-    });
+    );
 
     return () => {
       if (socketRef.current) {
@@ -81,6 +93,9 @@ export default function VoiceCall() {
         initiator: true,
         trickle: false,
         stream,
+        config: {
+          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+        },
       });
 
       peer.on("signal", (data: Peer.SignalData) => {
@@ -125,7 +140,7 @@ export default function VoiceCall() {
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-6 bg-white/10 backdrop-blur-lg border-none text-white">
         <h1 className="text-2xl font-bold text-center mb-6">Voice Call</h1>
-        
+
         {error && (
           <div className="bg-red-500/20 border border-red-500 rounded p-3 mb-4 text-sm">
             {error}
@@ -153,18 +168,24 @@ export default function VoiceCall() {
           <div className="space-y-4">
             <div className="text-center space-y-2">
               <p className="text-sm text-white/70">Room ID: {roomId}</p>
-              <p className="text-xs text-white/50">Share this ID with others to join</p>
+              <p className="text-xs text-white/50">
+                Share this ID with others to join
+              </p>
             </div>
-            
+
             <div className="flex justify-center gap-4">
               <Button
                 onClick={toggleMute}
                 variant="outline"
                 className="bg-white/5 border-white/10 hover:bg-white/10"
               >
-                {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                {isMuted ? (
+                  <MicOff className="h-4 w-4" />
+                ) : (
+                  <Mic className="h-4 w-4" />
+                )}
               </Button>
-              
+
               <Button
                 onClick={leaveCall}
                 variant="destructive"
