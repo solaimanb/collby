@@ -9,7 +9,7 @@ import { io, Socket } from "socket.io-client";
 import Peer from "simple-peer";
 
 // Use environment variable for Socket.IO server URL
-const SOCKET_SERVER = process.env.NEXT_PUBLIC_SOCKET_SERVER || "http://localhost:5000";
+const SOCKET_SERVER = process.env.NEXT_PUBLIC_SOCKET_SERVER;
 
 export default function VoiceCall() {
   const [roomId, setRoomId] = useState<string>("");
