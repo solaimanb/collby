@@ -22,54 +22,63 @@ export default function VoiceCall() {
   const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
-    socketRef.current = io(SOCKET_SERVER);
+    socketRef.current = io(SOCKET_SERVER, {
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    });
+
+    socketRef.current.on("connect", () => {
+      console.log("Socket connected");
+    });
+
+    socketRef.current.on("connect_error", (err) => {
+      console.error("Socket connection error:", err);
+      setError("Failed to connect to the server. Please try again later.");
+    });
+
+    socketRef.current.on("reconnect", () => {
+      console.log("Socket reconnected");
+    });
 
     socketRef.current.on("room-full", () => {
       setError("Room is full. Maximum 2 participants allowed.");
     });
 
-    socketRef.current.on(
-      "user-joined",
-      ({ signal }: { signal: Peer.SignalData }) => {
-        if (streamRef.current) {
-          const peer = new Peer({
-            initiator: false,
-            trickle: false,
-            stream: streamRef.current,
-            config: {
-              iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-            },
-          });
+    socketRef.current.on("user-joined", ({ signal }: { signal: Peer.SignalData }) => {
+      if (streamRef.current) {
+        const peer = new Peer({
+          initiator: false,
+          trickle: false,
+          stream: streamRef.current,
+          config: {
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+          },
+        });
 
-          peer.on("signal", (data: Peer.SignalData) => {
-            socketRef.current?.emit("returning-signal", {
-              signal: data,
-              roomId,
-            });
-          });
+        peer.on("signal", (data: Peer.SignalData) => {
+          socketRef.current?.emit("returning-signal", { signal: data, roomId });
+        });
 
-          peer.on("stream", (stream: MediaStream) => {
-            const audio = new Audio();
-            audio.srcObject = stream;
-            audio.play();
-          });
+        peer.on("stream", (stream: MediaStream) => {
+          const audio = new Audio();
+          audio.srcObject = stream;
+          audio.play();
+        });
 
-          peer.signal(signal);
-          peerRef.current = peer;
-        } else {
-          setError("Local stream is not available.");
-        }
+        peer.signal(signal);
+        peerRef.current = peer;
+      } else {
+        setError("Local stream is not available.");
       }
-    );
+    });
 
-    socketRef.current.on(
-      "receiving-returned-signal",
-      ({ signal }: { signal: Peer.SignalData }) => {
-        if (peerRef.current) {
-          peerRef.current.signal(signal);
-        }
+    socketRef.current.on("receiving-returned-signal", ({ signal }: { signal: Peer.SignalData }) => {
+      if (peerRef.current) {
+        peerRef.current.signal(signal);
       }
-    );
+    });
 
     return () => {
       if (socketRef.current) {
