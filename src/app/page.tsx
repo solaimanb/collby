@@ -57,11 +57,8 @@ export default function VoiceCall() {
             config: {
               iceServers: [
                 { urls: "stun:stun.l.google.com:19302" },
-                {
-                  urls: "relay1.expressturn.com:3478",
-                  username: "efQZWEG6AZABVUX9JK",
-                  credential: "9KyTq00gxMPtl3DV",
-                },
+                { urls: "stun:stun.services.mozilla.com" },
+                { urls: "stun:stun.stunprotocol.org:3478" },
               ],
             },
           });
