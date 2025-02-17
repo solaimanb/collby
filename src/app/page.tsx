@@ -46,39 +46,55 @@ export default function VoiceCall() {
       setError("Room is full. Maximum 2 participants allowed.");
     });
 
-    socketRef.current.on("user-joined", ({ signal }: { signal: Peer.SignalData }) => {
-      if (streamRef.current) {
-        const peer = new Peer({
-          initiator: false,
-          trickle: false,
-          stream: streamRef.current,
-          config: {
-            iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-          },
-        });
+    socketRef.current.on(
+      "user-joined",
+      ({ signal }: { signal: Peer.SignalData }) => {
+        if (streamRef.current) {
+          const peer = new Peer({
+            initiator: false,
+            trickle: false,
+            stream: streamRef.current,
+            config: {
+              iceServers: [
+                { urls: "stun:stun.l.google.com:19302" },
+                {
+                  urls: "relay1.expressturn.com:3478",
+                  username: "efQZWEG6AZABVUX9JK",
+                  credential: "9KyTq00gxMPtl3DV",
+                },
+              ],
+            },
+          });
 
-        peer.on("signal", (data: Peer.SignalData) => {
-          socketRef.current?.emit("returning-signal", { signal: data, roomId });
-        });
+          peer.on("signal", (data: Peer.SignalData) => {
+            socketRef.current?.emit("returning-signal", {
+              signal: data,
+              roomId,
+            });
+          });
 
-        peer.on("stream", (stream: MediaStream) => {
-          const audio = new Audio();
-          audio.srcObject = stream;
-          audio.play();
-        });
+          peer.on("stream", (stream: MediaStream) => {
+            const audio = new Audio();
+            audio.srcObject = stream;
+            audio.play();
+          });
 
-        peer.signal(signal);
-        peerRef.current = peer;
-      } else {
-        setError("Local stream is not available.");
+          peer.signal(signal);
+          peerRef.current = peer;
+        } else {
+          setError("Local stream is not available.");
+        }
       }
-    });
+    );
 
-    socketRef.current.on("receiving-returned-signal", ({ signal }: { signal: Peer.SignalData }) => {
-      if (peerRef.current) {
-        peerRef.current.signal(signal);
+    socketRef.current.on(
+      "receiving-returned-signal",
+      ({ signal }: { signal: Peer.SignalData }) => {
+        if (peerRef.current) {
+          peerRef.current.signal(signal);
+        }
       }
-    });
+    );
 
     return () => {
       if (socketRef.current) {
@@ -103,7 +119,11 @@ export default function VoiceCall() {
         trickle: false,
         stream,
         config: {
-          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+          iceServers: [
+            { urls: "stun:stun.l.google.com:19302" },
+            { urls: "stun:stun.services.mozilla.com" },
+            { urls: "stun:stun.stunprotocol.org:3478" },
+          ],
         },
       });
 
