@@ -243,7 +243,7 @@ function ChatRoomEntry() {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:5000', {
+    socketRef.current = io(process.env.NEXT_PUBLIC_API_URL, {
       transports: ['websocket'],
       reconnection: true,
       reconnectionDelay: 1000,
