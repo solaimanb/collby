@@ -137,7 +137,7 @@ export default function ChatPageContent() {
                   {msg.sender} • {msg.timestamp}
                 </div>
               )}
-              {/* <div
+              <div
                 className={`inline-block rounded-lg px-4 py-2 ${
                   msg.sender === "System"
                     ? "bg-transparent"
@@ -147,7 +147,7 @@ export default function ChatPageContent() {
                 }`}
               >
                 {msg.text}
-              </div> */}
+              </div>
             </div>
           ))}
           <div ref={messagesEndRef} />
