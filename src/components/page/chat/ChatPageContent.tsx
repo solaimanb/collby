@@ -121,6 +121,11 @@ export default function ChatPageContent() {
           {messages.map((msg, index) => (
             <div
               key={index}
+              //   className={`mb-3 ${msg.sender === username ? "text-right" : ""} ${
+              //     msg.sender === "System"
+              //       ? "text-center text-white/50 italic"
+              //       : ""
+              //   }`}
               className={`mb-3 ${msg.sender === username ? "text-right" : ""} ${
                 msg.sender === "System"
                   ? "text-center text-white/50 italic"
@@ -132,7 +137,7 @@ export default function ChatPageContent() {
                   {msg.sender} • {msg.timestamp}
                 </div>
               )}
-              <div
+              {/* <div
                 className={`inline-block rounded-lg px-4 py-2 ${
                   msg.sender === "System"
                     ? "bg-transparent"
@@ -142,7 +147,7 @@ export default function ChatPageContent() {
                 }`}
               >
                 {msg.text}
-              </div>
+              </div> */}
             </div>
           ))}
           <div ref={messagesEndRef} />
