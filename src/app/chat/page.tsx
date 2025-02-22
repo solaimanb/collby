@@ -1,6 +1,7 @@
-'use client';
+"use client";
 import React, { useState, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface ChatMessage {
   sender: string;
@@ -14,21 +15,22 @@ function ChatPage() {
   const [error, setError] = useState("");
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Get URL parameters
-  const params = new URLSearchParams(window.location.search);
-  const roomId = params.get("roomId");
-  const username = params.get("username");
-  const role = params.get("role");
+  const roomId = searchParams.get("roomId");
+  const username = searchParams.get("username");
+  const role = searchParams.get("role");
 
   useEffect(() => {
     if (!roomId || !username || !role) {
-      window.location.href = "/";
+      router.push("/");
       return;
     }
 
     // Create socket connection
-    const socket = io("http://localhost:5000", {
+    const socket = io(process.env.NEXT_PUBLIC_SOCKET_SERVER, {
       transports: ["websocket"],
       reconnection: true,
       reconnectionDelay: 1000,
